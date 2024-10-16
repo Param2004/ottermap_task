@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Shops</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .shop {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nearby Shops</h1>
+    <button id="get-location">Find Nearby Shops</button>
+    <div id="shop-list"></div>
+
+    <script>
+        document.getElementById('get-location').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+
+        function showPosition(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            fetch(`/shops/search/?latitude=${latitude}&longitude=${longitude}`)
+                .then(response => response.json())
+                .then(data => {
+                    const shopList = document.getElementById('shop-list');
+                    shopList.innerHTML = '';
+
+                    if (data.length === 0) {
+                        shopList.innerHTML = '<p>No shops found nearby.</p>';
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const shop = item.shop;
+                        const distance = item.distance_km;
+
+                        const shopElement = document.createElement('div');
+                        shopElement.classList.add('shop');
+                        shopElement.innerHTML = `
+                            <h3>${shop.name}</h3>
+                            <p>Latitude: ${shop.latitude}, Longitude: ${shop.longitude}</p>
+                            <p>Distance: ${distance} km</p>
+                        `;
+                        shopList.appendChild(shopElement);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching shops:', error);
+                });
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("User denied the request for Geolocation.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
